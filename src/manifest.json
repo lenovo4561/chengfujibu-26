@@ -1,0 +1,60 @@
+{
+  "package": "com.jschengfu.briskwalk",
+  "name": "承福计步",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "minPlatformVersion": 1121,
+  "icon": "/assets/images/logo.png",
+  "features": [
+    {
+      "name": "system.prompt"
+    },
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.shortcut"
+    },
+    {
+      "name": "system.fetch"
+    }
+  ],
+  "permissions": [
+    {
+      "origin": "*"
+    }
+  ],
+  "template/official": "demo-template",
+  "config": {
+    "logLevel": "debug",
+    "designWidth": 250
+  },
+  "router": {
+    "entry": "pages/Demo",
+    "pages": {
+      "pages/Demo": {
+        "component": "index"
+      },
+      "pages/DemoDetail": {
+        "component": "index"
+      }
+    }
+  },
+  "display": {
+    "titleBarBackgroundColor": "#f2f2f2",
+    "titleBarTextColor": "#414141",
+    "menu": true,
+    "pages": {
+      "pages/Demo": {
+        "titleBarText": "快应用示例模版",
+        "menu": false
+      },
+      "pages/DemoDetail": {
+        "titleBarText": "详情页"
+      }
+    }
+  },
+  "deviceTypeList": [
+    "phone"
+  ]
+}
