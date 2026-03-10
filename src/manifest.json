@@ -30,8 +30,23 @@
     "designWidth": 250
   },
   "router": {
-    "entry": "pages/Demo",
+    "entry": "pages/Main",
     "pages": {
+      "pages/Main": {
+        "component": "index"
+      },
+      "pages/Jibu": {
+        "component": "index"
+      },
+      "pages/Shuju": {
+        "component": "index"
+      },
+      "pages/Zhishi": {
+        "component": "index"
+      },
+      "pages/Mine": {
+        "component": "index"
+      },
       "pages/Demo": {
         "component": "index"
       },
@@ -45,6 +60,26 @@
     "titleBarTextColor": "#414141",
     "menu": true,
     "pages": {
+      "pages/Main": {
+        "titleBar": false,
+        "menu": false
+      },
+      "pages/Jibu": {
+        "titleBar": false,
+        "menu": false
+      },
+      "pages/Shuju": {
+        "titleBar": false,
+        "menu": false
+      },
+      "pages/Zhishi": {
+        "titleBar": false,
+        "menu": false
+      },
+      "pages/Mine": {
+        "titleBar": false,
+        "menu": false
+      },
       "pages/Demo": {
         "titleBarText": "快应用示例模版",
         "menu": false

@@ -1,0 +1,137 @@
+<import name="jibu-page" src="../Jibu/index.ux"></import>
+<import name="shuju-page" src="../Shuju/index.ux"></import>
+<import name="zhishi-page" src="../Zhishi/index.ux"></import>
+<import name="mine-page" src="../Mine/index.ux"></import>
+
+<template>
+  <div class="main-page">
+    <tabs class="tabs" onchange="changeTab" index="{{currentIndex}}">
+      <tab-content class="tab-content">
+        <jibu-page id="jibu-page" is-active="{{currentIndex === 0}}"></jibu-page>
+        <shuju-page id="shuju-page"></shuju-page>
+        <zhishi-page id="zhishi-page"></zhishi-page>
+        <mine-page id="mine-page"></mine-page>
+      </tab-content>
+    </tabs>
+
+    <div class="tab-bar">
+      <div class="tab-item" onclick="clickTab(0)">
+        <image
+          class="tab-icon"
+          src="{{currentIndex === 0 ? '../../assets/img/jibu-s.png' : '../../assets/img/jibu-u.png'}}"
+        ></image>
+        <text
+          class="tab-text"
+          style="color: {{currentIndex === 0 ? '#FFFFFF' : '#999999'}}"
+        >每日计步</text>
+      </div>
+      <div class="tab-item" onclick="clickTab(1)">
+        <image
+          class="tab-icon"
+          src="{{currentIndex === 1 ? '../../assets/img/shuju-s.png' : '../../assets/img/shuju-u.png'}}"
+        ></image>
+        <text
+          class="tab-text"
+          style="color: {{currentIndex === 1 ? '#FFFFFF' : '#999999'}}"
+        >数据统计</text>
+      </div>
+      <div class="tab-item" onclick="clickTab(2)">
+        <image
+          class="tab-icon"
+          src="{{currentIndex === 2 ? '../../assets/img/zhishi-s.png' : '../../assets/img/zhishi-u.png'}}"
+        ></image>
+        <text
+          class="tab-text"
+          style="color: {{currentIndex === 2 ? '#FFFFFF' : '#999999'}}"
+        >健康知识</text>
+      </div>
+      <div class="tab-item" onclick="clickTab(3)">
+        <image
+          class="tab-icon"
+          src="{{currentIndex === 3 ? '../../assets/img/mine-s.png' : '../../assets/img/mine-u.png'}}"
+        ></image>
+        <text
+          class="tab-text"
+          style="color: {{currentIndex === 3 ? '#FFFFFF' : '#999999'}}"
+        >我的</text>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  private: {
+    currentIndex: 0
+  },
+  onInit() {
+    if (this.tabIndex !== undefined && this.tabIndex !== null) {
+      this.currentIndex = parseInt(this.tabIndex)
+    }
+    this.$on('switchToTab', this.handleSwitchTab)
+  },
+  handleSwitchTab(evt) {
+    if (evt && evt.detail && evt.detail.index !== undefined) {
+      this.currentIndex = evt.detail.index
+    }
+  },
+  changeTab(e) {
+    this.currentIndex = e.index
+  },
+  clickTab(index) {
+    this.currentIndex = index
+  }
+}
+</script>
+
+<style>
+.main-page {
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.tabs {
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tab-content {
+  flex: 1;
+  width: 100%;
+}
+
+.tab-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 12px;
+  right: 12px;
+  height: 42px;
+  background-color: #000000;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  border-radius: 21px;
+  z-index: 1000;
+}
+
+.tab-item {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.tab-icon {
+  width: 16px;
+  height: 16px;
+  margin-bottom: 2px;
+}
+
+.tab-text {
+  font-size: 7px;
+  color: #999999;
+}
+</style>
