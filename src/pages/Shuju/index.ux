@@ -1,27 +1,692 @@
 <template>
   <div class="page">
-    <text class="placeholder">数据统计</text>
+    <list class="page-list">
+      <list-item type="header" class="header-container">
+        <image class="header-bg" src="../../assets/img/shujutongji-bg.png"></image>
+      </list-item>
+
+      <list-item type="tabs" class="tabs-container">
+        <div class="tabs">
+          <block for="(index, item) in tabs">
+            <div class="tab-item" onclick="switchTab(index)">
+              <text class="tab-text {{activeTab === index ? 'active-text' : ''}}">{{item}}</text>
+              <div class="tab-line" if="{{activeTab === index}}"></div>
+            </div>
+          </block>
+        </div>
+      </list-item>
+
+      <list-item type="current" class="section-container current-section">
+        <div class="month-selector">
+          <image class="arrow" src="../../assets/img/zuo.png" onclick="prevMonth"></image>
+          <text class="month-title">{{month}}月{{tabs[activeTab]}}统计</text>
+          <image class="arrow" src="../../assets/img/you.png" onclick="nextMonth"></image>
+        </div>
+        <div class="chart-container">
+          <canvas id="line-chart" class="chart-canvas {{hasCurrentData() ? '' : 'hide-canvas'}}"></canvas>
+          <div class="empty-box" if="{{!hasCurrentData()}}">
+            <image class="empty-img" src="../../assets/img/kong.png"></image>
+            <text class="empty-text">当前暂无数据哦～</text>
+          </div>
+        </div>
+      </list-item>
+
+      <list-item type="history" class="section-container history-section">
+        <div class="history-header">
+          <text class="history-title">历史最高数据</text>
+        </div>
+        <div class="line"></div>
+        <div class="history-list" if="{{hasHistoryData()}}">
+          <block for="(index, item) in historyData">
+            <div class="history-item">
+              <image class="history-icon" src="{{item.icon}}"></image>
+              <text class="history-label">{{item.label}}</text>
+              <text class="history-value">{{item.value}}</text>
+              <text class="history-date">{{item.date}}</text>
+            </div>
+          </block>
+        </div>
+        <div class="history-empty" else>
+          <image class="empty-img" src="../../assets/img/kong.png"></image>
+          <text class="empty-text">当前暂无数据哦～</text>
+        </div>
+      </list-item>
+      
+      <list-item type="bottom-banner" class="banner-section" if="{{hasAnyData()}}">
+        <image class="bottom-banner-img" src="../../assets/img/13.png"></image>
+      </list-item>
+    </list>
   </div>
 </template>
 
 <script>
+import storage from '@system.storage'
+
 export default {
-  private: {}
+  data: {
+    tabs: ['步数', '里程', '时长', '消耗'],
+    activeTab: 0,
+    month: 3,
+    year: 2026,
+    allDailyRecords: {},
+    historyData: [],
+    chartData: {
+      0: {
+        dates: [],
+        values: [],
+        maxValue: 1250
+      },
+      1: {
+        dates: [],
+        values: [],
+        maxValue: 6
+      },
+      2: {
+        dates: [],
+        values: [],
+        maxValue: 70
+      },
+      3: {
+        dates: [],
+        values: [],
+        maxValue: 300
+      }
+    }
+  },
+  onInit() {
+    this.setCurrentMonth()
+    this.loadStatisticsData()
+  },
+  onReady() {
+    this.scheduleDrawChart(100)
+  },
+  onShow() {
+    this.loadStatisticsData()
+  },
+  switchTab(index) {
+    this.activeTab = index
+    this.scheduleDrawChart(0)
+  },
+  prevMonth() {
+    if (this.month === 1) {
+      this.month = 12
+      this.year = this.year - 1
+    } else {
+      this.month = this.month - 1
+    }
+    this.generateMonthData()
+    this.scheduleDrawChart(0)
+  },
+  nextMonth() {
+    if (this.month === 12) {
+      this.month = 1
+      this.year = this.year + 1
+    } else {
+      this.month = this.month + 1
+    }
+    this.generateMonthData()
+    this.scheduleDrawChart(0)
+  },
+  scheduleDrawChart(delay) {
+    const timeout = typeof delay === 'number' ? delay : 0
+    setTimeout(() => {
+      this.drawChart()
+    }, timeout)
+  },
+  setCurrentMonth() {
+    const now = new Date()
+    this.month = now.getMonth() + 1
+    this.year = now.getFullYear()
+  },
+  resetToCurrentMonthAndReload() {
+    this.setCurrentMonth()
+    this.loadStatisticsData()
+  },
+  parseStoredRecords(rawData) {
+    const resolvedData = rawData && typeof rawData === 'object' && rawData.data !== undefined
+      ? rawData.data
+      : rawData
+    if (!resolvedData) {
+      return {}
+    }
+    if (typeof resolvedData === 'object') {
+      return resolvedData
+    }
+    try {
+      const parsed = JSON.parse(resolvedData)
+      if (parsed && typeof parsed === 'object') {
+        return parsed
+      }
+      return {}
+    } catch (e) {
+      return {}
+    }
+  },
+  getMonthPrefix() {
+    const monthText = this.month < 10 ? `0${this.month}` : `${this.month}`
+    return `${this.year}-${monthText}`
+  },
+  formatChartDate(dateText) {
+    if (!dateText || dateText.length < 10) {
+      return ''
+    }
+    return `${dateText.slice(5, 7)}.${dateText.slice(8, 10)}`
+  },
+  getDefaultMaxValue(tabIndex) {
+    if (tabIndex === 0) {
+      return 1250
+    }
+    if (tabIndex === 1) {
+      return 6
+    }
+    if (tabIndex === 2) {
+      return 70
+    }
+    return 300
+  },
+  createEmptyChartData() {
+    return {
+      0: {
+        dates: [],
+        values: [],
+        maxValue: 1250
+      },
+      1: {
+        dates: [],
+        values: [],
+        maxValue: 6
+      },
+      2: {
+        dates: [],
+        values: [],
+        maxValue: 70
+      },
+      3: {
+        dates: [],
+        values: [],
+        maxValue: 300
+      }
+    }
+  },
+  computeChartItem(values, tabIndex, dates) {
+    const maxValueFromData = values.length ? Math.max.apply(null, values) : 0
+    const defaultMax = this.getDefaultMaxValue(tabIndex)
+    const resolvedMax = Math.max(defaultMax, Math.ceil(maxValueFromData))
+    return {
+      dates: dates,
+      values: values,
+      maxValue: resolvedMax || defaultMax
+    }
+  },
+  buildHistoryData() {
+    const records = Object.values(this.allDailyRecords || {})
+    if (!records.length) {
+      this.historyData = []
+      return
+    }
+
+    const maxStepsRecord = records.reduce((best, current) => {
+      return Number(current.steps || 0) > Number(best.steps || 0) ? current : best
+    }, records[0])
+    const maxDistanceRecord = records.reduce((best, current) => {
+      return Number(current.distance || 0) > Number(best.distance || 0) ? current : best
+    }, records[0])
+    const maxMinutesRecord = records.reduce((best, current) => {
+      return Number(current.minutes || 0) > Number(best.minutes || 0) ? current : best
+    }, records[0])
+    const maxCalorieRecord = records.reduce((best, current) => {
+      return Number(current.calorie || 0) > Number(best.calorie || 0) ? current : best
+    }, records[0])
+
+    this.historyData = [
+      {
+        icon: '../../assets/img/bushu.png',
+        label: '步数',
+        value: `${Math.round(Number(maxStepsRecord.steps || 0))} 步`,
+        date: maxStepsRecord.date || ''
+      },
+      {
+        icon: '../../assets/img/gongli.png',
+        label: '公里',
+        value: `${Number(maxDistanceRecord.distance || 0).toFixed(2)} km`,
+        date: maxDistanceRecord.date || ''
+      },
+      {
+        icon: '../../assets/img/shichang.png',
+        label: '时长',
+        value: `${Number(maxMinutesRecord.minutes || 0).toFixed(2)} 分钟`,
+        date: maxMinutesRecord.date || ''
+      },
+      {
+        icon: '../../assets/img/reliang.png',
+        label: '消耗',
+        value: `${Number(maxCalorieRecord.calorie || 0).toFixed(2)} kcal`,
+        date: maxCalorieRecord.date || ''
+      }
+    ]
+  },
+  generateMonthData() {
+    const monthPrefix = this.getMonthPrefix()
+    const records = Object.values(this.allDailyRecords || {})
+      .filter(item => item.date && item.date.indexOf(monthPrefix) === 0)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+
+    if (!records.length) {
+      this.chartData = this.createEmptyChartData()
+      return
+    }
+
+    const dates = records.map(item => this.formatChartDate(item.date))
+    const stepsValues = records.map(item => Math.round(Number(item.steps || 0)))
+    const distanceValues = records.map(item => Number(Number(item.distance || 0).toFixed(2)))
+    const minutesValues = records.map(item => Number(Number(item.minutes || 0).toFixed(2)))
+    const calorieValues = records.map(item => Number(Number(item.calorie || 0).toFixed(2)))
+
+    this.chartData = {
+      0: this.computeChartItem(stepsValues, 0, dates),
+      1: this.computeChartItem(distanceValues, 1, dates),
+      2: this.computeChartItem(minutesValues, 2, dates),
+      3: this.computeChartItem(calorieValues, 3, dates)
+    }
+  },
+  loadStatisticsData() {
+    storage.get({
+      key: 'jibu_daily_records',
+      success: (data) => {
+        this.allDailyRecords = this.parseStoredRecords(data)
+        this.buildHistoryData()
+        this.generateMonthData()
+        this.scheduleDrawChart(0)
+      },
+      fail: () => {
+        this.allDailyRecords = {}
+        this.historyData = []
+        this.chartData = this.createEmptyChartData()
+        this.scheduleDrawChart(0)
+      }
+    })
+  },
+  hasCurrentData() {
+    const currentChart = this.chartData[this.activeTab] || {}
+    const values = currentChart.values || []
+    return values.length > 0
+  },
+  hasHistoryData() {
+    return (this.historyData || []).length > 0
+  },
+  hasAnyData() {
+    return this.hasCurrentData() || this.hasHistoryData()
+  },
+  formatYAxisLabelValue(rawValue, tabIndex) {
+    if (tabIndex === 0) {
+      return `${Math.round(Number(rawValue || 0))}`
+    }
+    if (tabIndex === 2) {
+      return Number(rawValue || 0).toFixed(1)
+    }
+    return `${rawValue}`
+  },
+  drawChart() {
+    if (!this.hasCurrentData()) {
+      return
+    }
+    const canvas = this.$element('line-chart')
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const width = 250
+    const height = 120
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height)
+    
+    const currentChart = this.chartData[this.activeTab] || this.chartData[0]
+    const dates = currentChart.dates || []
+    const values = currentChart.values || []
+    const maxValue = currentChart.maxValue || 1
+    const isStepsTab = this.activeTab === 0
+    const maxValueFromValues = values.length ? Math.max.apply(null, values) : 0
+    const yStep = isStepsTab ? 1250 : (maxValue / 8)
+    const yAxisMax = isStepsTab
+      ? Math.max(1250, Math.ceil(maxValueFromValues / 1250) * 1250)
+      : maxValue
+    const ySegments = isStepsTab ? Math.max(1, Math.ceil(yAxisMax / 1250)) : 8
+    if (!dates.length || !values.length) {
+      return
+    }
+    
+    const paddingX = this.activeTab === 2 ? 36 : 25
+    const paddingY = 20
+    const chartWidth = width - paddingX * 2
+    const chartHeight = height - paddingY * 2
+    
+    // Draw Y axis lines & labels
+    ctx.fillStyle = '#666666'
+    ctx.font = '8px sans-serif'
+    ctx.textAlign = 'right'
+    for (let i = 0; i <= ySegments; i++) {
+      const y = height - paddingY - (i / ySegments) * chartHeight
+      const val = isStepsTab ? (yStep * i) : ((yAxisMax * i) / 8)
+      const labelText = this.formatYAxisLabelValue(val, this.activeTab)
+      ctx.fillText(labelText, paddingX - 3, y + 3)
+      
+      // grid line
+      ctx.beginPath()
+      ctx.moveTo(paddingX, y)
+      ctx.lineTo(width - paddingX, y)
+      ctx.strokeStyle = '#dddddd'
+      ctx.lineWidth = 1
+      if (ctx.setLineDash) {
+        ctx.setLineDash([2, 2])
+      }
+      ctx.stroke()
+      if (ctx.setLineDash) {
+        ctx.setLineDash([])
+      }
+    }
+    
+    // Draw X axis labels & vertical grids
+    ctx.textAlign = 'center'
+    for (let i = 0; i < dates.length; i++) {
+      const ratio = dates.length > 1 ? (i / (dates.length - 1)) : 0.5
+      const x = paddingX + ratio * chartWidth
+      ctx.fillText(dates[i], x, height - paddingY + 10)
+      
+      // vertical grid line
+      ctx.beginPath()
+      ctx.moveTo(x, paddingY - 3)
+      ctx.lineTo(x, height - paddingY)
+      ctx.strokeStyle = '#dddddd'
+      ctx.lineWidth = 1
+      if (ctx.setLineDash) {
+        ctx.setLineDash([2, 2])
+      }
+      ctx.stroke()
+      if (ctx.setLineDash) {
+        ctx.setLineDash([])
+      }
+    }
+    
+    // Draw gradient area
+    const points = values.map((val, i) => {
+      const ratio = values.length > 1 ? (i / (values.length - 1)) : 0.5
+      return {
+        x: paddingX + ratio * chartWidth,
+        y: height - paddingY - (val / yAxisMax) * chartHeight
+      }
+    })
+    
+    ctx.beginPath()
+    ctx.moveTo(points[0].x, height - paddingY)
+    for (let i = 0; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y)
+    }
+    ctx.lineTo(points[points.length - 1].x, height - paddingY)
+    ctx.closePath()
+    
+    const gradient = ctx.createLinearGradient(0, paddingY, 0, height - paddingY)
+    gradient.addColorStop(0, 'rgba(255, 60, 179, 0.4)')
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)')
+    ctx.fillStyle = gradient
+    ctx.fill()
+    
+    // Draw Line
+    ctx.beginPath()
+    ctx.moveTo(points[0].x, points[0].y)
+    for (let i = 1; i < points.length; i++) {
+       // simple curve or line
+       ctx.lineTo(points[i].x, points[i].y)
+    }
+    ctx.strokeStyle = '#ff3cb3'
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+    
+    // Draw Points
+    for (let i = 0; i < points.length; i++) {
+      ctx.beginPath()
+      ctx.arc(points[i].x, points[i].y, 2, 0, 2 * Math.PI)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+      ctx.strokeStyle = '#ff3cb3'
+      ctx.lineWidth = 1
+      ctx.stroke()
+    }
+  }
 }
 </script>
 
 <style>
 .page {
-  flex: 1;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
   width: 100%;
   height: 100%;
+  background-color: #f7f8f9;
 }
 
-.placeholder {
-  font-size: 16px;
-  color: #333333;
+.page-list {
+  flex: 1;
+  width: 100%;
+  padding-bottom: 40px;
+  background-color: #ffffff;
+}
+
+.header-container {
+  width: 100%;
+  height: 120px;
+}
+
+.header-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tabs-container {
+  width: 100%;
+  background-color: #ffffff;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  margin-top: -18px;
+  height: 28px;
+}
+
+.tabs {
+  flex-direction: row;
+  justify-content: space-around;
+  width: 100%;
+  height: 28px;
+  padding: 0 10px;
+}
+
+.tab-item {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 4px 0;
+  position: relative;
+}
+
+.tab-text {
+  font-size: 12px;
+  color: #666666;
+  font-weight: bold;
+}
+
+.active-text {
+  color: #000000;
+  font-size: 12px;
+}
+
+.tab-line {
+  width: 18px;
+  height: 1px;
+  background-color: #ff3cb3;
+  border-radius: 1px;
+  position: absolute;
+  bottom: 0px;
+}
+
+.section-container {
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+  padding: 5px 0;
+  background-color: #ffffff;
+}
+
+.history-section {
+  margin-top: 6px;
+}
+
+.line {
+  width: 92%;
+  height: 1px;
+  background-color: #f5f5f5;
+  margin-left: 4%;
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+
+.current-section {
+  margin-top: 0px;
+}
+
+.month-selector {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 5px;
+}
+
+.arrow {
+  width: 10px;
+  height: 10px;
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.month-title {
+  font-size: 12px;
+  color: #000000;
+  font-weight: bold;
+  margin: 0 8px;
+}
+
+.chart-container {
+  width: 100%;
+  height: 120px;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-canvas {
+  width: 250px;
+  height: 120px;
+}
+
+.hide-canvas {
+  display: none;
+}
+
+.empty-box {
+  width: 100%;
+  height: 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-empty {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 25px 0;
+}
+
+.empty-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.empty-text {
+  font-size: 9px;
+  color: #cccccc;
+}
+
+.history-header {
+  width: 100%;
+  flex-direction: row;
+  justify-content: center;
+  margin-bottom: 5px;
+}
+
+.history-title {
+  font-size: 12px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.history-list {
+  flex-direction: column;
+  padding: 0 15px;
+  width: 100%;
+}
+
+.history-item {
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom-width: 1px;
+  border-bottom-color: #f5f5f5;
+}
+
+.history-icon {
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+}
+
+.history-label {
+  font-size: 9px;
+  color: #666666;
+  width: 55px;
+  flex-shrink: 0;
+}
+
+.history-value {
+  font-size: 10px;
+  color: #000000;
+  font-weight: bold;
+  width: 64px;
+  margin-right: 8px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.history-date {
+  font-size: 8px;
+  color: #999999;
+  width: 50px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.banner-section {
+  width: 100%;
+  padding: 10px 15px;
+  margin-top: 6px;
+  margin-bottom: 15px;
+}
+
+.bottom-banner-img {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 </style>
+

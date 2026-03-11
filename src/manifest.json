@@ -23,6 +23,9 @@
     },
     {
       "name": "system.app"
+    },
+    {
+      "name": "system.webview"
     }
   ],
   "permissions": [
@@ -63,6 +66,15 @@
         "component": "index"
       },
       "pages/DemoDetail": {
+        "component": "index"
+      },
+      "pages/CalcResult": {
+        "component": "index"
+      },
+      "pages/BodyFatResults": {
+        "component": "index"
+      },
+      "pages/ZhishiDetail": {
         "component": "index"
       }
     }
@@ -105,6 +117,18 @@
       },
       "pages/DemoDetail": {
         "titleBarText": "详情页"
+      },
+      "pages/CalcResult": {
+        "titleBar": false,
+        "menu": false
+      },
+      "pages/BodyFatResults": {
+        "titleBar": false,
+        "menu": false
+      },
+      "pages/ZhishiDetail": {
+        "titleBar": false,
+        "menu": false
       }
     }
   },

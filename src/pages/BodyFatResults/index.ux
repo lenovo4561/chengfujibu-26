@@ -1,0 +1,400 @@
+﻿<template>
+  <div class="page">
+    <list class="page-list">
+      <list-item type="header" class="header-container">
+        <image class="top-bg" src="../../assets/img/jisuanjieguo-bg.png"></image>
+        
+        <div class="back-box" onclick="goBack">
+          <image class="back-icon" src="../../assets/img/back.png"></image>
+        </div>
+      </list-item>
+
+      <list-item type="result-card" class="result-section">
+        <div class="card-container">
+          <div class="blur-layer"></div>
+          <div class="frost-overlay"></div>
+          
+          <div class="card-content">
+            <div class="data-row">
+              <div class="data-item">
+                <text class="data-val">男</text>
+                <text class="data-label">性别</text>
+              </div>
+              <div class="data-item">
+                <text class="data-val">25</text>
+                <text class="data-label">年龄</text>
+              </div>
+              <div class="data-item">
+                <text class="data-val">22.9</text>
+                <text class="data-label">BMI(%)</text>
+              </div>
+              <div class="data-item">
+                <text class="data-val">16</text>
+                <text class="data-label">体脂率</text>
+              </div>
+            </div>
+
+            <div class="chart-container">
+              <div class="status-bubble">
+                <text class="status-text">正常</text>
+                <div class="bubble-arrow"></div>
+              </div>
+              
+              <div class="bar-row">
+                <div class="bar bar-1"></div>
+                <div class="bar bar-2"></div>
+                <div class="bar bar-3"></div>
+                <div class="bar bar-4"></div>
+              </div>
+              
+              <div class="labels-row">
+                <text class="chart-label label-1">6%</text>
+                <text class="chart-label label-2">13%</text>
+                <text class="chart-label label-3">18%</text>
+                <text class="chart-label label-4">25%</text>
+              </div>
+            </div>
+          </div>
+        </div>
+      </list-item>
+
+      <list-item type="details" class="details-section">
+        <div class="section-title-wrap">
+          <div class="title-line"></div>
+          <text class="section-title">相关拓展</text>
+        </div>
+
+        <text class="sub-title underlined">体脂率计算公式:</text>
+        <text class="desc-text">= 1.2 x BMI + 0.23 x 年龄 - 5.4 - 10.8 x 性别</text>
+        <text class="desc-text">(男=1，女=0)</text>
+
+        <text class="sub-title underlined mt-15">体脂率标准表</text>
+        
+        <!-- Table -->
+        <div class="table">
+          <div class="tr th">
+            <text class="td td-1 th-text">体脂等级</text>
+            <text class="td td-2 th-text">男性体脂率</text>
+            <text class="td td-3 th-text">女性体脂率</text>
+            <text class="td td-4 th-text">健康/体型说明</text>
+          </div>
+          <block for="(index, item) in tableData">
+            <div class="tr {{item.rowClass}}">
+              <text class="td td-1 td-text">{{item.level}}</text>
+              <text class="td td-2 td-text">{{item.male}}</text>
+              <text class="td td-3 td-text">{{item.female}}</text>
+              <text class="td td-4 td-text">{{item.desc}}</text>
+            </div>
+          </block>
+        </div>
+
+        <text class="sub-title underlined mt-15">体脂率标准表</text>
+        <text class="desc-text">年龄: 年龄越大，肌肉越少，体脂越容易上升</text>
+        <text class="desc-text">肌肉量: 肌肉越多，基础代谢越高，越不容易囤脂。</text>
+        <text class="desc-text">饮食:</text>
+        <text class="desc-text">高油高糖 -> 体脂飙升</text>
+        <text class="desc-text">高蛋白、控碳 -> 体脂下降</text>
+        <text class="desc-text">作息:</text>
+        <text class="desc-text">熬夜 -> 激素紊乱 -> 更容易长肚子脂肪</text>
+      </list-item>
+    </list>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+
+export default {
+  data: {
+    tableData: [
+      { level: '过低(偏瘦/危险)', male: '≤6%', female: '≤16%', desc: '可能影响健康、激素水平', rowClass: 'bg-white' },
+      { level: '优秀(运动员/精瘦)', male: '6%~13%', female: '16%~23%', desc: '肌肉线条明显、体脂极低', rowClass: 'bg-light' },
+      { level: '理想(健康/匀称)', male: '14%~17%', female: '24%~29%', desc: '匀称理想体型、代谢良好', rowClass: 'bg-white' },
+      { level: '偏高(微胖/需控制)', male: '18%~24%', female: '30%~34%', desc: '脂肪略多、建议减脂', rowClass: 'bg-light' },
+      { level: '过高(肥胖/风险)', male: '≥25%', female: '≥35%', desc: '肥胖、慢病风险上升', rowClass: 'bg-white' }
+    ]
+  },
+  goBack() {
+    router.back()
+  }
+}
+</script>
+
+<style>
+.page {
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #fcfcfc;
+}
+
+.page-list {
+  flex: 1;
+  width: 100%;
+  padding-bottom: 20px;
+}
+
+.header-container {
+  width: 100%;
+  height: 90px;
+  position: relative;
+}
+
+.top-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.back-box {
+  position: absolute;
+  left: 7px;
+  top: 15px;
+  width: 22px;
+  height: 22px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.3);
+  justify-content: center;
+  align-items: center;
+}
+
+.back-icon {
+  width: 6px;
+  height: 10px;
+  object-fit: contain;
+}
+
+.result-section {
+  width: 100%;
+  padding: 0 10px;
+  margin-top: -20px;
+}
+
+.card-container {
+  width: 100%;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  height: 100px;
+}
+
+.blur-layer {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  filter: blur(4px);
+}
+
+.frost-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.95),
+    #ffffff
+  );
+}
+
+.card-content {
+  flex-direction: column;
+  width: 100%;
+  padding: 10px;
+  position: relative;
+  height: 100%;
+}
+
+.data-row {
+  flex-direction: row;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.data-item {
+  flex-direction: column;
+  align-items: center;
+}
+
+.data-val {
+  font-size: 14px;
+  color: #333333;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.data-label {
+  font-size: 8px;
+  color: #999999;
+}
+
+.chart-container {
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  margin-top: 5px;
+}
+
+.status-bubble {
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  margin-left: -12px;
+}
+
+.status-text {
+  background-color: #8ce1fd;
+  color: #ffffff;
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.bubble-arrow {
+  width: 0px;
+  height: 0px;
+  border-left-width: 3px;
+  border-right-width: 3px;
+  border-top-width: 3px;
+  border-bottom-width: 0px;
+  border-color: #8ce1fd transparent transparent transparent;
+}
+
+.bar-row {
+  flex-direction: row;
+  width: 100%;
+  height: 6px;
+  margin-bottom: 3px;
+}
+
+.bar {
+  height: 100%;
+}
+
+.bar-1 { width: 22%; background-color: #e2f6fd; }
+.bar-2 { width: 22%; background-color: #c0edfc; margin-left: 2px; }
+.bar-3 { width: 22%; background-color: #97dffc; margin-left: 2px; }
+.bar-4 { width: 34%; background-color: #6ed3fb; margin-left: 2px; }
+
+.labels-row {
+  flex-direction: row;
+  width: 100%;
+  justify-content: flex-start;
+  position: relative;
+}
+
+.chart-label {
+  font-size: 7px;
+  color: #999999;
+  position: absolute;
+}
+.label-1 { left: 16%; }
+.label-2 { left: 38%; }
+.label-3 { left: 60%; }
+.label-4 { left: 82%; }
+
+.details-section {
+  width: 100%;
+  flex-direction: column;
+  padding: 15px 12px;
+}
+
+.section-title-wrap {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.title-line {
+  width: 2px;
+  height: 10px;
+  background-color: #ff5500;
+  margin-right: 4px;
+  border-radius: 1px;
+}
+
+.section-title {
+  font-size: 11px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.sub-title {
+  font-size: 10px;
+  color: #333333;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.underlined {
+  text-decoration: underline;
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+.desc-text {
+  font-size: 9px;
+  color: #666666;
+  line-height: 14px;
+}
+
+.table {
+  flex-direction: column;
+  width: 100%;
+  border-width: 1px;
+  border-color: #e0f8ff;
+  border-radius: 3px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.tr {
+  flex-direction: row;
+  width: 100%;
+  border-bottom-width: 1px;
+  border-bottom-color: #e0f8ff;
+}
+
+.th {
+  background-color: #e0f8ff;
+}
+
+.bg-white {
+  background-color: #ffffff;
+}
+
+.bg-light {
+  background-color: #f7fcff;
+}
+
+.td {
+  padding: 4px 2px;
+  text-align: center;
+  border-right-width: 1px;
+  border-right-color: #e0f8ff;
+}
+
+.td-1 { width: 28%; }
+.td-2 { width: 22%; }
+.td-3 { width: 22%; }
+.td-4 { width: 28%; border-right-width: 0; }
+
+.th-text {
+  font-size: 7px;
+  color: #666666;
+}
+
+.td-text {
+  font-size: 7px;
+  color: #333333;
+}
+</style>

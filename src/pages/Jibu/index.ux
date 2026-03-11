@@ -1,29 +1,810 @@
-<template>
+﻿<template>
   <div class="page">
-    <text class="placeholder">每日计步</text>
+    <div class="header-container">
+      <image class="header-bg" src="../../assets/img/shouye-bg.png"></image>
+      <div class="card1">
+        <image class="card1-bg" src="../../assets/img/Rectangle.png"></image>
+        <div class="card1-content">
+          <div class="card1-left">
+            <text class="title">今日步数</text>
+            <div class="steps-row">
+              <text class="steps">{{todaySteps}}</text>
+              <text class="unit">步</text>
+            </div>
+            <text class="btn" if="{{!hasAddedData}}" onclick="addSteps">添加步数</text>
+            <div class="action-row" if="{{hasAddedData}}">
+              <text class="btn btn-continue" onclick="addSteps">继续添加</text>
+              <text class="btn btn-delete" onclick="clearData">删除数据</text>
+            </div>
+          </div>
+        </div>
+      </div>
+      <image class="person" src="../../assets/img/renwu.png"></image>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="stats-row">
+        <div class="stat-card">
+          <image class="bg-img" src="../../assets/img/naozhong-bg.png"></image>
+          <div class="stat-content">
+            <div class="stat-left">
+              <text class="stat-val {{getStatValueClass(sportMinutes)}}">{{sportMinutes}}</text>
+              <text class="stat-desc">运动时长 (分钟)</text>
+            </div>
+            <image class="stat-icon1" src="../../assets/img/naozhong-1.png"></image>
+          </div>
+        </div>
+        <div class="stat-card stat-card2">
+          <image class="bg-img" src="../../assets/img/kaluli-bg.png"></image>
+          <div class="stat-content">
+            <div class="stat-left">
+              <text class="stat-val stat-val2 {{getStatValueClass(calorie)}}">{{calorie}}</text>
+              <text class="stat-desc stat-desc2">卡路里消耗 (kcal)</text>
+            </div>
+            <image class="stat-icon2" src="../../assets/img/kaluli.png"></image>
+          </div>
+        </div>
+      </div>
+
+      <div class="goal-section">
+        <div class="goal-header">
+          <text class="goal-title">步数目标：
+            <span class="goal-val-unset" if="{{goalSteps <= 0}}">{{goalDisplay}}</span>
+            <span class="goal-val-set" if="{{goalSteps > 0}}">{{goalDisplay}}</span>
+          </text>
+          <div class="go-set" onclick="goSet">
+            <text class="go-set-text">去设置</text>
+            <image class="set-icon" src="../../assets/img/shezhi.png"></image>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <image class="arc" src="../../assets/img/yuanhu.png"></image>
+          <div class="progress-info">
+            <div class="pct-row">
+              <text class="pct-val">{{progressPct}}</text>
+              <text class="pct-sys">%</text>
+            </div>
+            <text class="pct-desc">目标完成进度</text>
+          </div>
+        </div>
+      </div>
+
+      <image class="bottom-img" src="../../assets/img/12.png"></image>
+    </div>
+
+    <!-- 弹窗：步数记录 -->
+    <div class="mask" if="{{showAddSteps}}">
+      <div class="modal">
+        <div class="modal-top-gradient"></div>
+        <div class="modal-content">
+          <text class="modal-title">步数记录</text>
+          <text class="modal-label">运动时长（分钟）</text>
+          <input class="modal-input" type="number" value="{{addDurationInput}}" oninput="onDurationInput" onchange="onDurationInput" placeholder="请输入运动时长" />
+          <text class="modal-label">运动距离（公里）</text>
+          <input class="modal-input" type="number" value="{{addDistanceInput}}" oninput="onDistanceInput" onchange="onDistanceInput" placeholder="请输入运动距离" />
+          <div class="modal-btns">
+            <div class="btn-cancel" onclick="closeAddSteps"><text class="btn-text-black">取消</text></div>
+            <div class="btn-confirm" onclick="submitAddSteps"><text class="btn-text-white">添加</text></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗：步数目标 -->
+    <div class="mask" if="{{showSetGoal}}">
+      <div class="modal">
+        <div class="modal-top-gradient"></div>
+        <div class="modal-content">
+          <text class="modal-title">步数目标</text>
+          <text class="modal-label">今日目标步数（步）</text>
+          <input class="modal-input" type="number" value="{{goalInput}}" oninput="onGoalInput" onchange="onGoalInput" placeholder="请输入今日目标步数" />
+          <div class="modal-btns mt-extra">
+            <div class="btn-cancel" onclick="closeSetGoal"><text class="btn-text-black">取消</text></div>
+            <div class="btn-confirm" onclick="submitSetGoal"><text class="btn-text-white">设置</text></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
 export default {
-  private: {
-    isActive: false
+  data: {
+    showAddSteps: false,
+    showSetGoal: false,
+    addDurationInput: '',
+    addDistanceInput: '',
+    goalInput: '',
+    todaySteps: 0,
+    sportMinutes: 0,
+    calorie: 0,
+    hasAddedData: false,
+    goalSteps: 0,
+    goalDisplay: '未设置',
+    progressPct: 0
+  },
+  onInit() {
+    this.loadGoalData()
+    this.loadTodayData()
+  },
+  getTodayKey() {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    const day = now.getDate()
+    const monthText = month < 10 ? `0${month}` : `${month}`
+    const dayText = day < 10 ? `0${day}` : `${day}`
+    return `${year}-${monthText}-${dayText}`
+  },
+  parseStoredRecords(rawData) {
+    const resolvedData = rawData && typeof rawData === 'object' && rawData.data !== undefined
+      ? rawData.data
+      : rawData
+    if (!resolvedData) {
+      return {}
+    }
+    if (typeof resolvedData === 'object') {
+      return resolvedData
+    }
+    try {
+      const parsed = JSON.parse(resolvedData)
+      if (parsed && typeof parsed === 'object') {
+        return parsed
+      }
+      return {}
+    } catch (e) {
+      return {}
+    }
+  },
+  loadRecords(callback) {
+    storage.get({
+      key: 'jibu_daily_records',
+      success: (data) => {
+        const records = this.parseStoredRecords(data)
+        if (typeof callback === 'function') {
+          callback(records)
+        }
+      },
+      fail: () => {
+        if (typeof callback === 'function') {
+          callback({})
+        }
+      }
+    })
+  },
+  saveRecords(records, callback) {
+    storage.set({
+      key: 'jibu_daily_records',
+      value: JSON.stringify(records || {}),
+      success: () => {
+        if (typeof callback === 'function') {
+          callback(true)
+        }
+      },
+      fail: () => {
+        if (typeof callback === 'function') {
+          callback(false)
+        }
+      }
+    })
+  },
+  loadGoalData() {
+    storage.get({
+      key: 'jibu_goal_steps',
+      success: (data) => {
+        const rawGoal = data && data.data !== undefined ? data.data : data
+        const goal = Math.round(this.parseNumber(rawGoal))
+        this.goalSteps = goal
+        this.goalDisplay = goal > 0 ? `${goal}` : '未设置'
+        this.refreshProgress()
+      },
+      fail: () => {
+        this.goalSteps = 0
+        this.goalDisplay = '未设置'
+        this.refreshProgress()
+      }
+    })
+  },
+  saveGoalData(goal) {
+    storage.set({
+      key: 'jibu_goal_steps',
+      value: `${goal > 0 ? goal : 0}`
+    })
+  },
+  loadTodayData() {
+    const todayKey = this.getTodayKey()
+    this.loadRecords((records) => {
+      const todayData = records[todayKey] || {}
+      this.todaySteps = Number(todayData.steps || 0)
+      this.sportMinutes = Number(todayData.minutes || 0)
+      this.calorie = Number(todayData.calorie || 0)
+      this.hasAddedData = this.todaySteps > 0
+      this.refreshProgress()
+    })
+  },
+  syncTodayDataToStorage(callback) {
+    const todayKey = this.getTodayKey()
+    this.loadRecords((records) => {
+      if (this.todaySteps > 0 || this.sportMinutes > 0 || this.calorie > 0) {
+        records[todayKey] = {
+          date: todayKey,
+          steps: this.todaySteps,
+          distance: Number((this.todaySteps * 0.0007).toFixed(2)),
+          minutes: this.sportMinutes,
+          calorie: this.calorie
+        }
+      } else if (records[todayKey]) {
+        delete records[todayKey]
+      }
+      this.saveRecords(records, (ok) => {
+        if (typeof callback === 'function') {
+          callback(ok)
+        }
+      })
+    })
+  },
+  normalizeInputValue(e) {
+    if (typeof e === 'string' || typeof e === 'number') {
+      return `${e}`
+    }
+    if (e && typeof e.value !== 'undefined') {
+      return e.value
+    }
+    if (e && typeof e.text !== 'undefined') {
+      return e.text
+    }
+    if (e && e.detail && typeof e.detail.value !== 'undefined') {
+      return e.detail.value
+    }
+    if (e && e.target && e.target.attr && typeof e.target.attr.value !== 'undefined') {
+      return e.target.attr.value
+    }
+    if (e && e.target && typeof e.target.value !== 'undefined') {
+      return e.target.value
+    }
+    if (e && e.currentTarget && typeof e.currentTarget.value !== 'undefined') {
+      return e.currentTarget.value
+    }
+    if (e && e.currentTarget && e.currentTarget.attr && typeof e.currentTarget.attr.value !== 'undefined') {
+      return e.currentTarget.attr.value
+    }
+    return ''
+  },
+  parseNumber(text) {
+    const parsed = parseFloat(text)
+    if (Number.isNaN(parsed) || parsed < 0) {
+      return 0
+    }
+    return parsed
+  },
+  getStatValueClass(value) {
+    const text = `${value === undefined || value === null ? '' : value}`
+    const length = text.length
+    if (length >= 8) {
+      return 'stat-val-xs'
+    }
+    if (length >= 6) {
+      return 'stat-val-sm'
+    }
+    return ''
+  },
+  refreshProgress() {
+    if (this.goalSteps <= 0) {
+      this.progressPct = 0
+      return
+    }
+    const percent = Math.floor((this.todaySteps / this.goalSteps) * 100)
+    this.progressPct = percent > 100 ? 100 : percent
+  },
+  addSteps() {
+    this.showAddSteps = true;
+  },
+  onDurationInput(e) {
+    this.addDurationInput = this.normalizeInputValue(e)
+  },
+  onDistanceInput(e) {
+    this.addDistanceInput = this.normalizeInputValue(e)
+  },
+  closeAddSteps() {
+    this.showAddSteps = false;
+  },
+  submitAddSteps() {
+    const durationMinutes = this.parseNumber(this.addDurationInput)
+    const distanceKm = this.parseNumber(this.addDistanceInput)
+    if (durationMinutes <= 0 && distanceKm <= 0) {
+      prompt.showToast({ message: '请输入有效的时长或距离' })
+      return
+    }
+    const secondsFromDuration = durationMinutes * 60
+    const metersFromDistance = distanceKm * 1000
+
+    let steps = 0
+    if (metersFromDistance > 0) {
+      steps = Math.round(metersFromDistance / 0.7)
+    } else {
+      steps = Math.round(secondsFromDuration)
+    }
+
+    const totalSteps = this.todaySteps + steps
+    const resolvedMinutes = totalSteps / 60
+    const resolvedKcal = totalSteps * 0.05
+
+    this.todaySteps = totalSteps
+    this.sportMinutes = Number(resolvedMinutes.toFixed(2))
+    this.calorie = Number(resolvedKcal.toFixed(2))
+    this.hasAddedData = this.todaySteps > 0
+    this.addDurationInput = ''
+    this.addDistanceInput = ''
+    this.refreshProgress()
+    this.syncTodayDataToStorage()
+    this.showAddSteps = false;
+  },
+  clearData() {
+    this.todaySteps = 0
+    this.sportMinutes = 0
+    this.calorie = 0
+    this.hasAddedData = false
+    this.addDurationInput = ''
+    this.addDistanceInput = ''
+    this.refreshProgress()
+    this.syncTodayDataToStorage()
+  },
+  goSet() {
+    this.showSetGoal = true;
+  },
+  onGoalInput(e) {
+    this.goalInput = this.normalizeInputValue(e)
+  },
+  closeSetGoal() {
+    this.showSetGoal = false;
+  },
+  submitSetGoal() {
+    const goal = Math.round(this.parseNumber(this.goalInput))
+    if (goal <= 0) {
+      prompt.showToast({ message: '请输入有效目标步数' })
+      return
+    }
+    this.goalSteps = goal
+    this.goalDisplay = goal > 0 ? `${goal}` : '未设置'
+    this.refreshProgress()
+    this.saveGoalData(goal)
+    this.showSetGoal = false;
   }
 }
 </script>
 
 <style>
 .page {
-  flex: 1;
   flex-direction: column;
+  width: 100%;
+  position: relative;
+}
+
+.content-wrapper {
+  flex-direction: column;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.header-container {
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 15px;
   justify-content: center;
   align-items: center;
+  padding: 0;
+  position: relative;
+  overflow: visible;
+}
+
+.header-bg {
+  position: absolute;
+  top: -15px;
+  left: 0;
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+}
+
+.bg-img {
+  position: absolute;
+  width: 100%;
+  height: 75%;
+}
+
+.card1-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+.card1 {
+  width: calc(100% - 20px);
+  height: 110px; /* Ensure space for inner contents naturally */
+  margin-top:70px;
+  margin-left: 10px;
+  margin-right: 10px;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.card1-content {
+  width: 100%;
+  height: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  padding-left: 8px;
+  position: relative;
+  overflow: visible;
+}
+
+.card1-left {
+  flex-direction: column;
+  justify-content: center;
+  margin-top: -10px;
+}
+
+.title {
+  font-size: 9px;
+  color: #666666;
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+.steps-row {
+  flex-direction: row;
+  align-items: flex-end;
+  margin-bottom: 15px;
+}
+
+.steps {
+  font-size: 24px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.unit {
+  font-size: 10px;
+  color: #333333;
+  margin-left: 4px;
+  margin-bottom: 4px;
+}
+
+.btn {
+  width: 58px;
+  height: 22px;
+  background-color: #1ed1db;
+  color: #ffffff;
+  font-size: 10px;
+  text-align: center;
+  border-radius: 11px;
+}
+
+.action-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.btn-continue {
+  width: 58px;
+}
+
+.btn-delete {
+  width: 58px;
+  margin-left: 8px;
+  background-color: #000000;
+}
+
+.person {
+  position: absolute;
+  width: 135px;
+  height: 135px;
+  right: 2px;
+  top: 45px;
+  z-index: 3;
+  object-fit: contain;
+}
+
+.stats-row {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.stat-card {
+  flex: 1;
+  height: 78px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.stat-card2 {
+  margin-left: 8px;
+}
+
+.stat-content {
+  width: 100%;
+  height: 75%;
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: 0 4px;
+  align-items: center;
+  position: relative;
+  overflow: visible;
+}
+
+.stat-left {
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  padding-right: 34px;
+}
+
+.stat-val {
+  font-size: 22px;
+  color: #ff5f00;
+  font-weight: bold;
+  lines: 1;
+  text-overflow: clip;
+  overflow: hidden;
+}
+
+.stat-desc {
+  font-size: 8px;
+  color: #ff5f00;
+  margin-top: 3px;
+  lines: 1;
+  text-overflow: clip;
+  overflow: visible;
+}
+
+.stat-val2 {
+  color: #00a0e9;
+  lines: 1;
+  text-overflow: clip;
+  overflow: hidden;
+}
+
+.stat-val-sm {
+  font-size: 18px;
+}
+
+.stat-val-xs {
+  font-size: 16px;
+}
+
+.stat-desc2 {
+  color: #00a0e9;
+  font-size: 8px;
+}
+
+.stat-icon1 {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  right: -4px;
+  top: 0px;
+  object-fit: contain;
+}
+
+.stat-icon2 {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  right: -4px;
+  top: 0px;
+  object-fit: contain;
+}
+
+.goal-section {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 0px;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.goal-header {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.goal-title {
+  font-size: 12px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.goal-val-unset {
+  color: #c9c9c9;
+}
+
+.goal-val-set {
+  color: #000000;
+}
+
+.go-set {
+  flex-direction: row;
+  align-items: center;
+}
+
+.go-set-text {
+  font-size: 10px;
+  color: #999999;
+  margin-right: 5px;
+}
+
+.set-icon {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+
+.progress-wrap {
+  width: 120px;
+  height: 120px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  align-self: center;
+  justify-content: center;
+  align-items: center;
+}
+
+.arc {
+  position: absolute;
   width: 100%;
   height: 100%;
 }
 
-.placeholder {
-  font-size: 16px;
+.progress-info {
+  flex-direction: column;
+  align-items: center;
+}
+
+.pct-row {
+  flex-direction: row;
+  align-items: flex-end;
+}
+
+.pct-val {
+  font-size: 28px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.pct-sys {
+  font-size: 14px;
+  color: #000000;
+  margin-bottom: 6px;
+  margin-left: 2px;
+}
+
+.pct-desc {
+  font-size: 10px;
+  color: #999999;
+  margin-top: 5px;
+}
+
+.bottom-img {
+  width: 100%;
+  height: 105px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-top: -18px;
+}
+
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 999;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.modal {
+  width: 90%;
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.modal-top-gradient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 90px;
+  background: linear-gradient(to bottom, #bcf3f5, #ffffff);
+}
+
+.modal-content {
+  flex-direction: column;
+  position: relative;
+}
+
+.modal-title {
+  font-size: 14px;
+  color: #000000;
+  font-weight: bold;
+  align-self: center;
+  margin-bottom: 14px;
+}
+
+.modal-label {
+  font-size: 12px;
   color: #333333;
+  margin-bottom: 8px;
+  margin-top: 8px;
+}
+
+.modal-input {
+  width: 100%;
+  height: 38px;
+  background-color: #f7f7f7;
+  border-radius: 10px;
+  padding: 0 15px;
+  font-size: 12px;
+  color: #333333;
+  margin-bottom: 5px;
+}
+
+.modal-btns {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 18px;
+  width: 100%;
+}
+
+.mt-extra {
+  margin-top: 22px;
+}
+
+.btn-cancel {
+  flex: 1;
+  height: 40px;
+  border: 1px solid #000000;
+  border-radius: 20px;
+  justify-content: center;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.btn-confirm {
+  flex: 1;
+  height: 40px;
+  background-color: #1ed1db;
+  border-radius: 20px;
+  justify-content: center;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.btn-text-black {
+  color: #000000;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.btn-text-white {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
 }
 </style>

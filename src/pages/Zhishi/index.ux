@@ -1,27 +1,476 @@
-<template>
+﻿<template>
   <div class="page">
-    <text class="placeholder">健康知识</text>
+    <list class="page-list">
+      <list-item type="header" class="header-container">
+        <image class="top-bg" src="../../assets/img/zhishijiankang-bg.png"></image>
+      </list-item>
+
+      <list-item type="calculator" class="calc-section">
+        <div class="calc-card-container">
+          <div class="blur-layer"></div>
+          <div class="frost-overlay"></div>
+
+          <div class="calc-content">
+            <div class="calc-tabs">
+              <div class="calc-tab {{activeTab === 0 ? 'active-tab' : ''}}" onclick="switchTab(0)">
+                <text class="{{activeTab === 0 ? 'active-tab-text' : 'inactive-tab-text'}}">BMI</text>
+              </div>
+              <div class="calc-tab {{activeTab === 1 ? 'active-tab' : ''}}" onclick="switchTab(1)">
+                <text class="{{activeTab === 1 ? 'active-tab-text' : 'inactive-tab-text'}}">体脂率</text>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <text class="input-label">身高（cm）</text>
+              <div class="input-wrapper">
+                <input class="data-input" type="number" placeholder="请输入身高" value="{{height}}" onchange="onHeightChange" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <text class="input-label">体重（kg）</text>
+              <div class="input-wrapper">
+                <input class="data-input" type="number" placeholder="请输入体重" value="{{weight}}" onchange="onWeightChange" />
+              </div>
+            </div>
+
+            <div class="bodyfat-extra" if="{{activeTab === 1}}">
+              <div class="input-group">
+                <text class="input-label">年龄（周岁）</text>
+                <div class="input-wrapper">
+                  <input class="data-input" type="number" placeholder="请输入年龄" value="{{age}}" onchange="onAgeChange" />
+                </div>
+              </div>
+
+              <div class="input-group">
+                <text class="input-label">性别</text>
+                <div class="gender-group">
+                  <div class="gender-btn left-btn {{gender === 1 ? 'gender-active' : 'gender-inactive'}}" onclick="onGenderChange(1)">
+                    <text class="{{gender === 1 ? 'gender-text-active' : 'gender-text-inactive'}}">男</text>
+                  </div>
+                  <div class="gender-btn right-btn {{gender === 0 ? 'gender-active' : 'gender-inactive'}}" onclick="onGenderChange(0)">
+                    <text class="{{gender === 0 ? 'gender-text-active' : 'gender-text-inactive'}}">女</text>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="calc-btn" onclick="calculateResult">
+              <text class="calc-btn-text">查看结果</text>
+            </div>
+          </div>
+        </div>
+      </list-item>
+
+      <list-item type="article-header" class="article-header">
+        <div class="article-title-row">
+          <div class="title-line"></div>
+          <text class="article-title">走路知识</text>
+        </div>
+      </list-item>
+
+      <list-item type="article-list" class="article-list-section">
+        <div class="article-list-wrap">
+          <block for="(index, item) in articles">
+            <div class="article-item" onclick="goDetail(item)">
+              <div class="article-img-wrap">
+                <image class="article-img" src="{{item.image}}"></image>
+              </div>
+              <div class="article-info">
+                <text class="article-name">{{item.title}}</text>
+                <div class="article-bottom">
+                  <text class="article-desc">{{item.desc}}</text>
+                  <div class="article-btn"><text class="article-btn-text">查看详情</text></div>
+                </div>
+              </div>
+            </div>
+          </block>
+        </div>
+      </list-item>
+
+      <list-item type="spacer" class="bottom-spacer"></list-item>
+    </list>
   </div>
 </template>
 
 <script>
+import router from '@system.router'
+
 export default {
-  private: {}
+  data: {
+    activeTab: 0,
+    height: '',
+    weight: '',
+    age: '',
+    gender: 1,
+    articles: [
+      {
+        id: 1,
+        title: '计步器的工作原理的核心的是加速度传感器',
+        desc: '加速度传感器、感知、灵敏度高',
+        image: '../../assets/img/kong.png'
+      },
+      {
+        id: 2,
+        title: '每天走8000-10000步是科学合理的健康目标',
+        desc: '加速度传感器、感知、灵敏度高',
+        image: '../../assets/img/kong.png'
+      },
+      {
+        id: 3,
+        title: '正确的走路姿势能减少损伤、提升锻炼效果',
+        desc: '加速度传感器、感知、灵敏度高',
+        image: '../../assets/img/kong.png'
+      }
+    ]
+  },
+  switchTab(index) {
+    this.activeTab = index
+  },
+  onHeightChange(e) {
+    if (e) {
+      this.height = e.value
+    }
+  },
+  onWeightChange(e) {
+    if (e) {
+      this.weight = e.value
+    }
+  },
+  onAgeChange(e) {
+    if (e) {
+      this.age = e.value
+    }
+  },
+  onGenderChange(val) {
+    this.gender = val
+  },
+  calculateResult() {
+    if (this.activeTab === 0) {
+      router.push({
+        uri: 'pages/CalcResult',
+        params: {
+          height: this.height || '',
+          weight: this.weight || ''
+        }
+      })
+    } else {
+      router.push({
+        uri: 'pages/BodyFatResults',
+        params: {
+          height: this.height || '',
+          weight: this.weight || '',
+          age: this.age || '',
+          gender: this.gender
+        }
+      })
+    }
+  },
+  goDetail(item) {
+    router.push({
+      uri: 'pages/ZhishiDetail',
+      params: {
+        title: item.title,
+        desc: item.desc
+      }
+    })
+  }
 }
 </script>
 
 <style>
 .page {
-  flex: 1;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
   width: 100%;
   height: 100%;
+  background-color: #f7f8f9;
 }
 
-.placeholder {
-  font-size: 16px;
+.page-list {
+  flex: 1;
+  width: 100%;
+  padding-bottom: 0;
+}
+
+.bottom-spacer {
+  width: 100%;
+  height: 88px;
+}
+
+.header-container {
+  width: 100%;
+  height: 120px;
+}
+
+.top-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.calc-section {
+  width: 100%;
+  padding: 0 10px;
+  margin-top: -30px;
+}
+
+.calc-card-container {
+  width: 100%;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.blur-layer {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  filter: blur(4px);
+}
+
+.frost-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.75),
+    rgba(255, 255, 255, 0.95),
+    #ffffff
+  );
+}
+
+.calc-content {
+  flex-direction: column;
+  width: 100%;
+  padding: 12px 10px;
+  position: relative;
+}
+
+.calc-tabs {
+  flex-direction: row;
+  width: 100%;
+  height: 25px;
+  background-color: transparent;
+  margin-bottom: 15px;
+}
+
+.calc-tab {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  border-radius: 12.5px;
+}
+
+.active-tab {
+  background-color: #ff3cb3;
+}
+
+.active-tab-text {
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.inactive-tab-text {
+  color: #666666;
+  font-size: 10px;
+}
+
+.input-group {
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.input-label {
+  font-size: 10px;
   color: #333333;
+  margin-bottom: 8px;
+  margin-left: 2px;
+}
+
+.input-wrapper {
+  background-color: rgba(247, 248, 249, 0.6);
+  height: 32px;
+  border-radius: 5px;
+  padding: 0 10px;
+  justify-content: center;
+}
+
+.data-input {
+  width: 100%;
+  height: 100%;
+  font-size: 10px;
+  color: #cccccc;
+  background-color: transparent;
+}
+
+.bodyfat-extra {
+  flex-direction: column;
+  width: 100%;
+}
+
+.gender-group {
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.gender-btn {
+  flex: 1;
+  height: 32px;
+  border-radius: 5px;
+  justify-content: center;
+  align-items: center;
+}
+
+.left-btn {
+  margin-right: 5px;
+}
+
+.right-btn {
+  margin-left: 5px;
+}
+
+.gender-active {
+  background-color: #ffefe6;
+}
+
+.gender-inactive {
+  background-color: #f7f8f9;
+}
+
+.gender-text-active {
+  color: #ff5500;
+  font-size: 10px;
+}
+
+.gender-text-inactive {
+  color: #666666;
+  font-size: 10px;
+}
+
+.calc-btn {
+  width: 100%;
+  height: 35px;
+  background-color: #000000;
+  border-radius: 17.5px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.calc-btn-text {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.article-header {
+  width: 100%;
+  padding: 15px 10px 5px;
+}
+
+.article-title-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.title-line {
+  width: 2px;
+  height: 10px;
+  background-color: #ff5500;
+  margin-right: 4px;
+  border-radius: 1px;
+}
+
+.article-title {
+  font-size: 11px;
+  color: #000000;
+  font-weight: bold;
+}
+
+.article-list-section {
+  width: 100%;
+}
+
+.article-list-wrap {
+  flex-direction: column;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.article-item {
+  flex-direction: row;
+  background-color: transparent;
+  padding: 10px 0;
+  border-bottom-width: 1px;
+  border-bottom-color: #f0f0f0;
+}
+
+.article-img-wrap {
+  width: 50px;
+  height: 50px;
+  border-radius: 5px;
+  margin-right: 8px;
+  background-color: #f0f0f0;
+  overflow: hidden;
+}
+
+.article-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.article-info {
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.article-name {
+  font-size: 9px;
+  color: #333333;
+  font-weight: bold;
+  lines: 2;
+  text-overflow: ellipsis;
+  line-height: 13px;
+}
+
+.article-bottom {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.article-desc {
+  font-size: 7px;
+  color: #999999;
+  flex: 1;
+  lines: 1;
+  text-overflow: ellipsis;
+  margin-right: 6px;
+  padding-bottom: 1px;
+}
+
+.article-btn {
+  background-color: #0bdce0;
+  border-radius: 10px;
+  padding: 3px 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.article-btn-text {
+  color: #ffffff;
+  font-size: 8px;
 }
 </style>

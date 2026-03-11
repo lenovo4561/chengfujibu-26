@@ -6,7 +6,12 @@
 
 <script>
 export default {
-  props: ['url', 'title'],
+  data() {
+    return {
+      title: '',
+      url: ''
+    }
+  },
   onInit() {
     if (this.title) {
       this.$page.setTitleBar({ text: this.title })

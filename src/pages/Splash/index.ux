@@ -39,11 +39,14 @@ import router from '@system.router'
 import storage from '@system.storage'
 import app from '@system.app'
 import prompt from '@system.prompt'
+import device from '@system.device'
+import $apis from '../../helper/apis'
 
 export default {
   data: {
     timer: null,
-    showModal: false
+    showModal: false,
+    hasInitUser: false
   },
   onInit() {
     this.checkPrivacyAgreement()
@@ -53,6 +56,9 @@ export default {
       key: 'hasAgreedPrivacy',
       success: data => {
         if (data === 'true') {
+          if (!this.hasInitUser) {
+            this.initUser()
+          }
           this.startTimer()
         } else {
           this.showModal = true
@@ -74,6 +80,9 @@ export default {
       value: 'true',
       success: () => {
         this.showModal = false
+        if (!this.hasInitUser) {
+          this.initUser()
+        }
         this.navigateToHome()
       }
     })
@@ -107,6 +116,79 @@ export default {
   navigateToHome() {
     router.replace({
       uri: '/pages/Main'
+    })
+  },
+  initUser() {
+    this.hasInitUser = true
+    Promise.all([
+      new Promise((resolve) => {
+        device.getOAID({
+          success: function (data) {
+            console.log('获取oaid成功', JSON.stringify(data))
+            resolve(data.oaid)
+          },
+          fail: function (data, code) {
+            console.log('获取oaid失败', data, code)
+            resolve('')
+          }
+        })
+      }),
+      new Promise((resolve) => {
+        if (device.getUserId) {
+          device.getUserId({
+            success: function (data) { resolve(data.userId) },
+            fail: function () { resolve('') }
+          })
+        } else {
+          device.getId({
+            type: ['user'],
+            success: function (data) { resolve(data.user || '') },
+            fail: function () { resolve('') }
+          })
+        }
+      }),
+      new Promise((resolve) => {
+        device.getInfo({
+          success: function (data) { resolve(data) },
+          fail: function (data, code) {
+            console.error('get device info failed:', code)
+            resolve({})
+          }
+        })
+      })
+    ]).then((results) => {
+      const oaid = results[0]
+      const androidId = results[1]
+      const deviceInfo = results[2]
+      const appInfo = app.getInfo()
+
+      const params = {
+        oaid: oaid,
+        android: androidId,
+        model: deviceInfo.model || '',
+        brand: deviceInfo.brand || '',
+        pn: appInfo.packageName || '',
+        app_version: appInfo.versionName || '',
+        os_version: deviceInfo.osVersionName || '',
+        qudao: 'vivo'
+      }
+
+      console.log('初始化用户请求参数:', params)
+
+      $apis.user
+        .init(params)
+        .then((data) => {
+          console.info('User init success:', data)
+          if (data && data.user_token) {
+            storage.set({
+              key: 'user_token',
+              value: data.user_token
+            })
+          }
+        })
+        .catch((err) => {
+          console.error('User init failed:', err)
+        })
     })
   },
   onHide() {

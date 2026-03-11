@@ -73,13 +73,49 @@ export default {
   handleSwitchTab(evt) {
     if (evt && evt.detail && evt.detail.index !== undefined) {
       this.currentIndex = evt.detail.index
+      this.refreshShujuPage(evt.detail.index)
     }
   },
   changeTab(e) {
     this.currentIndex = e.index
+    this.refreshShujuPage(e.index)
   },
   clickTab(index) {
     this.currentIndex = index
+    this.refreshShujuPage(index)
+  },
+  refreshShujuPage(tabIndex) {
+    if (tabIndex !== 1) {
+      return
+    }
+    this.$nextTick(() => {
+      const shujuPage = this.$child('shuju-page')
+      const jibuPage = this.$child('jibu-page')
+      const doReloadShuju = () => {
+        if (!shujuPage) {
+          return
+        }
+        if (shujuPage.resetToCurrentMonthAndReload) {
+          shujuPage.resetToCurrentMonthAndReload()
+        } else if (shujuPage.loadStatisticsData) {
+          shujuPage.loadStatisticsData()
+        }
+      }
+
+      if (jibuPage && jibuPage.syncTodayDataToStorage) {
+        jibuPage.syncTodayDataToStorage(() => {
+          doReloadShuju()
+          setTimeout(() => {
+            doReloadShuju()
+          }, 300)
+        })
+      } else {
+        doReloadShuju()
+        setTimeout(() => {
+          doReloadShuju()
+        }, 300)
+      }
+    })
   }
 }
 </script>
