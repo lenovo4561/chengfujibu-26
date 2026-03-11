@@ -17,6 +17,12 @@
     },
     {
       "name": "system.fetch"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+      "name": "system.app"
     }
   ],
   "permissions": [
@@ -30,8 +36,14 @@
     "designWidth": 250
   },
   "router": {
-    "entry": "pages/Main",
+    "entry": "pages/Splash",
     "pages": {
+      "pages/Splash": {
+        "component": "index"
+      },
+      "pages/Webview": {
+        "component": "index"
+      },
       "pages/Main": {
         "component": "index"
       },
@@ -60,6 +72,13 @@
     "titleBarTextColor": "#414141",
     "menu": true,
     "pages": {
+      "pages/Splash": {
+        "titleBar": false,
+        "menu": false
+      },
+      "pages/Webview": {
+        "titleBarText": ""
+      },
       "pages/Main": {
         "titleBar": false,
         "menu": false

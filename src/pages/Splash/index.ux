@@ -1,0 +1,238 @@
+<template>
+  <div class="splash-container">
+    <!-- 背景图 -->
+    <image class="bg-img" src="/assets/img/loading-bg.png"></image>
+
+    <!-- 中间 logo -->
+    <div class="center-content">
+      <image class="center-logo" src="/assets/img/logo.png"></image>
+    </div>
+
+    <!-- 隐私协议弹窗 -->
+    <div class="modal_overlay" if="{{showModal}}">
+      <div class="modal_content">
+        <text class="modal_title">用户协议及隐私政策</text>
+        <div class="modal_text_wrapper">
+          <text class="modal_text">
+            <span>尊敬的用户：欢迎使用"承福计步"，在使用前请仔细阅读</span>
+            <a class="link" onclick="openPrivacy">《隐私政策》</a>
+            <span>及</span>
+            <a class="link" onclick="openAgreement">《用户协议》</a>
+            <span>，我们将严格遵守您同意的各项条款使用您的信息，以便为您提供更好的服务。点击"同意"意味着您自愿遵守《隐私政策》，我们将严格保护您的个人信息，确保信息安全。</span>
+          </text>
+        </div>
+        <div class="modal_buttons">
+          <div class="btn_primary" onclick="handleAgree">
+            <text class="btn_text_primary">同意并继续</text>
+          </div>
+          <div class="btn_secondary" onclick="handleDisagree">
+            <text class="btn_text_secondary">不同意</text>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import storage from '@system.storage'
+import app from '@system.app'
+import prompt from '@system.prompt'
+
+export default {
+  data: {
+    timer: null,
+    showModal: false
+  },
+  onInit() {
+    this.checkPrivacyAgreement()
+  },
+  checkPrivacyAgreement() {
+    storage.get({
+      key: 'hasAgreedPrivacy',
+      success: data => {
+        if (data === 'true') {
+          this.startTimer()
+        } else {
+          this.showModal = true
+        }
+      },
+      fail: () => {
+        this.showModal = true
+      }
+    })
+  },
+  startTimer() {
+    this.timer = setTimeout(() => {
+      this.navigateToHome()
+    }, 2000)
+  },
+  handleAgree() {
+    storage.set({
+      key: 'hasAgreedPrivacy',
+      value: 'true',
+      success: () => {
+        this.showModal = false
+        this.navigateToHome()
+      }
+    })
+  },
+  handleDisagree() {
+    prompt.showToast({
+      message: '感谢您的使用，应用即将退出'
+    })
+    setTimeout(() => {
+      app.exit()
+    }, 1500)
+  },
+  openPrivacy() {
+    router.push({
+      uri: '/pages/Webview',
+      params: {
+        url: 'https://api.51dsp.cn/index/privacy.do?pn=com.jschengfu.briskwalk',
+        title: '隐私政策'
+      }
+    })
+  },
+  openAgreement() {
+    router.push({
+      uri: '/pages/Webview',
+      params: {
+        url: 'https://api.51dsp.cn/index/agreement.do?pn=com.jschengfu.briskwalk',
+        title: '用户协议'
+      }
+    })
+  },
+  navigateToHome() {
+    router.replace({
+      uri: '/pages/Main'
+    })
+  },
+  onHide() {
+    if (this.timer) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+  },
+  onDestroy() {
+    if (this.timer) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+  }
+}
+</script>
+
+<style>
+.splash-container {
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  justify-content: center;
+  align-items: center;
+}
+
+.bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.center-content {
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+  margin-bottom: 200px;
+}
+
+.center-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* 弹窗遮罩 */
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal_content {
+  width: 199px;
+  background-color: #ffffff;
+  border-radius: 9px;
+  padding: 16px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal_title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 9px;
+}
+
+.modal_text_wrapper {
+  margin-bottom: 16px;
+}
+
+.modal_text {
+  font-size: 10px;
+  color: #666666;
+  line-height: 15px;
+}
+
+.link {
+  color: #e63c2f;
+  text-decoration: underline;
+}
+
+.modal_buttons {
+  flex-direction: column;
+  width: 100%;
+}
+
+.btn_primary {
+  width: 100%;
+  height: 28px;
+  background: linear-gradient(135deg, #e63c2f 0%, #c0392b 100%);
+  border-radius: 14px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.btn_text_primary {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.btn_secondary {
+  width: 100%;
+  height: 28px;
+  background-color: #f5f7fa;
+  border-radius: 14px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn_text_secondary {
+  color: #e63c2f;
+  font-size: 11px;
+  font-weight: bold;
+}
+</style>
