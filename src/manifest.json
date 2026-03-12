@@ -26,6 +26,9 @@
     },
     {
       "name": "system.webview"
+    },
+    {
+      "name": "system.device"
     }
   ],
   "permissions": [
@@ -44,41 +47,47 @@
       "pages/Splash": {
         "component": "index"
       },
-      "pages/Webview": {
+      "pkg_main/pages/Webview": {
         "component": "index"
       },
-      "pages/Main": {
+      "pkg_main/pages/Main": {
         "component": "index"
       },
-      "pages/Jibu": {
+      "pkg_main/pages/Jibu": {
         "component": "index"
       },
-      "pages/Shuju": {
+      "pkg_main/pages/Shuju": {
         "component": "index"
       },
-      "pages/Zhishi": {
+      "pkg_main/pages/Zhishi": {
         "component": "index"
       },
-      "pages/Mine": {
+      "pkg_main/pages/Mine": {
         "component": "index"
       },
-      "pages/Demo": {
+      "pkg_main/pages/Demo": {
         "component": "index"
       },
-      "pages/DemoDetail": {
+      "pkg_main/pages/DemoDetail": {
         "component": "index"
       },
-      "pages/CalcResult": {
+      "pkg_main/pages/CalcResult": {
         "component": "index"
       },
-      "pages/BodyFatResults": {
+      "pkg_main/pages/BodyFatResults": {
         "component": "index"
       },
-      "pages/ZhishiDetail": {
+      "pkg_main/pages/ZhishiDetail": {
         "component": "index"
       }
     }
   },
+  "subpackages": [
+    {
+      "name": "pkg_main",
+      "resource": "pkg_main"
+    }
+  ],
   "display": {
     "titleBarBackgroundColor": "#f2f2f2",
     "titleBarTextColor": "#414141",
@@ -88,45 +97,45 @@
         "titleBar": false,
         "menu": false
       },
-      "pages/Webview": {
+      "pkg_main/pages/Webview": {
         "titleBarText": ""
       },
-      "pages/Main": {
+      "pkg_main/pages/Main": {
         "titleBar": false,
         "menu": false
       },
-      "pages/Jibu": {
+      "pkg_main/pages/Jibu": {
         "titleBar": false,
         "menu": false
       },
-      "pages/Shuju": {
+      "pkg_main/pages/Shuju": {
         "titleBar": false,
         "menu": false
       },
-      "pages/Zhishi": {
+      "pkg_main/pages/Zhishi": {
         "titleBar": false,
         "menu": false
       },
-      "pages/Mine": {
+      "pkg_main/pages/Mine": {
         "titleBar": false,
         "menu": false
       },
-      "pages/Demo": {
+      "pkg_main/pages/Demo": {
         "titleBarText": "快应用示例模版",
         "menu": false
       },
-      "pages/DemoDetail": {
+      "pkg_main/pages/DemoDetail": {
         "titleBarText": "详情页"
       },
-      "pages/CalcResult": {
+      "pkg_main/pages/CalcResult": {
         "titleBar": false,
         "menu": false
       },
-      "pages/BodyFatResults": {
+      "pkg_main/pages/BodyFatResults": {
         "titleBar": false,
         "menu": false
       },
-      "pages/ZhishiDetail": {
+      "pkg_main/pages/ZhishiDetail": {
         "titleBar": false,
         "menu": false
       }
